@@ -12,7 +12,7 @@ TELEM_HEADER_SIZE = 28
 TELEM_NAME_OFFSET = 16
 TELEM_NAME_MAX_LEN = 32
 
-BUFFERS = (770160, 721008, 745584)
+VAL_BUFFERS = 3
 
 TYPEMAP = ['c', '?', 'i', 'I', 'f', 'd']
 
@@ -124,8 +124,7 @@ class API(object):
                 break
 
         # Set up the telemetry, working out the var types
-        self.var_types = {}
-        self._setup_telemetry()
+        self.var_types, self.var_buffer_offsets = self._setup_telemetry()
 
         # Find the size of each slot in memory - pre-calc for speed later
         self.sizes = {}
@@ -159,9 +158,18 @@ class API(object):
         return offset + len(headers) + 4
 
     def _setup_telemetry(self):
-        self.mmp.seek(self._telemetry_header_start)
+        # Find the offsets for the value array(s)
+        var_buffer_offsets = []
+        for i in range(VAL_BUFFERS):
+            seek = 52 + (i * 16)
+            self.mmp.seek(seek)
+            data = self.mmp.read(4)
+            offset = struct.unpack('i', data)[0]
+            var_buffer_offsets.append(offset)
 
         # Set up the type map based on the headers
+        var_types = {}
+        self.mmp.seek(self._telemetry_header_start)
         while True:
             pos = self.mmp.tell() + TELEM_NAME_OFFSET
             start = TELEM_NAME_OFFSET
@@ -171,14 +179,15 @@ class API(object):
             if name == '':
                 break
             var_type = TYPEMAP[int(struct.unpack('i', header[0:4])[0])]
-            self.var_types[name] = var_type
+            var_types[name] = var_type
+        return var_types, var_buffer_offsets
 
     def telemetry(self, key):
         """ Return the data for a telemetry key.
         """
         offset = VALOFFSETS[key]
-        for b in BUFFERS:
-            self.mmp.seek(b + offset)
+        for vb_offset in self.var_buffer_offsets:
+            self.mmp.seek(vb_offset + offset)
             data = self.mmp.read(self.sizes[key])
             if len(data.replace('\x00','')) != 0:
                 return struct.unpack(self.var_types[key], data)[0]
@@ -186,6 +195,7 @@ class API(object):
     @property
     def yaml(self):
         """ Returns the YAML as a nested Python dict.
+            TODO: flatten dict, provide key-based accessor method.
         """
         ymltxt = ''
         self.mmp.seek(0)
