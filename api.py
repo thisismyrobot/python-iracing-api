@@ -14,7 +14,7 @@ TELEM_NAME_MAX_LEN = 32
 
 BUFFERS = (770160, 721008, 745584)
 
-TYPEMAP = ['c', '?', 'i', 'c', 'f', 'd']
+TYPEMAP = ['c', '?', 'i', 'I', 'f', 'd']
 
 VALOFFSETS = {
     'SessionTime':0,
@@ -124,7 +124,8 @@ class API(object):
                 break
 
         # Set up the telemetry, working out the var types
-        self.var_types = self.setup_telemetry()
+        self.var_types = {}
+        self.setup_telemetry()
 
         # Find the size of each slot in memory - pre-calc for speed later
         self.sizes = {}
@@ -139,7 +140,7 @@ class API(object):
             self.mmp.seek(b + offset)
             data = self.mmp.read(self.sizes[key])
             if len(data.replace('\x00','')) != 0:
-                return struct.unpack('I', data)[0]
+                return struct.unpack(self.var_types[key], data)[0]
 
     @property
     def yaml(self):
@@ -169,8 +170,6 @@ class API(object):
         return offset + len(headers) + 4
 
     def setup_telemetry(self):
-        var_types = {}
-
         # Find the start of the headers, starting from the end of the YAML
         self.mmp.seek(self.yaml_end())
         dat = '\x00'
@@ -187,19 +186,18 @@ class API(object):
             name = header[start:end].replace('\x00','')
             if name == '':
                 break
-            var_types[name] = TYPEMAP[int(struct.unpack('i', header[0:4])[0])]
-
-        return var_types
-
+            var_type = TYPEMAP[int(struct.unpack('i', header[0:4])[0])]
+            self.var_types[name] = var_type
+        
 
 if __name__ == '__main__':
-    
+    """ Simple test harness.
+    """
     import time
     api = API()
     
     while True:
-        print api.telemetry('Gear')
+        print '{0} Gear, {1} m/s, {2} m/s/s'.format(api.telemetry('Gear'),
+                                                    api.telemetry('Speed'),
+                                                    api.telemetry('LatAccel'))
         time.sleep(1)
-
-    import pdb; pdb.set_trace()
-    
