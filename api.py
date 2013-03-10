@@ -125,12 +125,53 @@ class API(object):
 
         # Set up the telemetry, working out the var types
         self.var_types = {}
-        self.setup_telemetry()
+        self._setup_telemetry()
 
         # Find the size of each slot in memory - pre-calc for speed later
         self.sizes = {}
         for key, t in self.var_types.items():
             self.sizes[key] = struct.calcsize(t)
+
+    @property
+    def _telemetry_header_start(self):
+        """ Returns the index of the telemetry header, searching from the end of
+            the yaml.
+        """
+        self.mmp.seek(self._yaml_end)
+        dat = '\x00'
+        while dat.strip() == '\x00':
+            dat = self.mmp.read(1)
+        return self.mmp.tell() - 1
+
+    @property
+    def _yaml_end(self):
+        """ Returns the index of the end of the YAML in memory.
+        """
+        self.mmp.seek(0)
+        offset = 0
+        headers = self.mmp.readline()
+        while True:
+            line = self.mmp.readline()
+            if line.strip() == '...':
+                break
+            else:
+                offset += len(line)
+        return offset + len(headers) + 4
+
+    def _setup_telemetry(self):
+        self.mmp.seek(self._telemetry_header_start)
+
+        # Set up the type map based on the headers
+        while True:
+            pos = self.mmp.tell() + TELEM_NAME_OFFSET
+            start = TELEM_NAME_OFFSET
+            end = TELEM_NAME_OFFSET + TELEM_NAME_MAX_LEN
+            header = self.mmp.read(TELEM_HEADER_LEN)
+            name = header[start:end].replace('\x00','')
+            if name == '':
+                break
+            var_type = TYPEMAP[int(struct.unpack('i', header[0:4])[0])]
+            self.var_types[name] = var_type
 
     def telemetry(self, key):
         """ Return the data for a telemetry key.
@@ -157,38 +198,6 @@ class API(object):
                 ymltxt += line
         return yaml.load(ymltxt, Loader=yaml.CLoader)
 
-    def yaml_end(self):
-        self.mmp.seek(0)
-        offset = 0
-        headers = self.mmp.readline()
-        while True:
-            line = self.mmp.readline()
-            if line.strip() == '...':
-                break
-            else:
-                offset += len(line)
-        return offset + len(headers) + 4
-
-    def setup_telemetry(self):
-        # Find the start of the headers, starting from the end of the YAML
-        self.mmp.seek(self.yaml_end())
-        dat = '\x00'
-        while dat.strip() == '\x00':
-            dat = self.mmp.read(1)
-        self.mmp.seek(self.mmp.tell() - 1)
-
-        # Set up the type map based on the headers
-        while True:
-            pos = self.mmp.tell() + TELEM_NAME_OFFSET
-            start = TELEM_NAME_OFFSET
-            end = TELEM_NAME_OFFSET + TELEM_NAME_MAX_LEN
-            header = self.mmp.read(TELEM_HEADER_LEN)
-            name = header[start:end].replace('\x00','')
-            if name == '':
-                break
-            var_type = TYPEMAP[int(struct.unpack('i', header[0:4])[0])]
-            self.var_types[name] = var_type
-        
 
 if __name__ == '__main__':
     """ Simple test harness.
