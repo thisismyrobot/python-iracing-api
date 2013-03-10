@@ -14,6 +14,8 @@ TELEM_NAME_MAX_LEN = 32
 
 BUFFERS = (770160, 721008, 745584)
 
+TYPEMAP = ['c', '?', 'i', 'c', 'f', 'd']
+
 VALOFFSETS = {
     'SessionTime':0,
     'SessionNum':8,
@@ -108,6 +110,7 @@ VALOFFSETS = {
     'LFshockDefl':1914,
 }
 
+
 class API(object):
 
     def __init__(self):
@@ -119,7 +122,14 @@ class API(object):
                 size += 1
             except:
                 break
-        self._telem_map, self._headers_offset = self.setup_telemetry()
+
+        # Set up the telemetry, working out the var types
+        self.var_types = self.setup_telemetry()
+
+        # Find the size of each slot in memory - pre-calc for speed later
+        self.sizes = {}
+        for key, t in self.var_types.items():
+            self.sizes[key] = struct.calcsize(t)
 
     def telemetry(self, key):
         """ Return the data for a telemetry key.
@@ -127,10 +137,9 @@ class API(object):
         offset = VALOFFSETS[key]
         for b in BUFFERS:
             self.mmp.seek(b + offset)
-            data = self.mmp.read(4)
+            data = self.mmp.read(self.sizes[key])
             if len(data.replace('\x00','')) != 0:
-                print data, struct.unpack('B', data[0])[0]
-                break
+                return struct.unpack('I', data)[0]
 
     @property
     def yaml(self):
@@ -160,38 +169,37 @@ class API(object):
         return offset + len(headers) + 4
 
     def setup_telemetry(self):
-        telem_map = {}
-        self.mmp.seek(self.yaml_end())
+        var_types = {}
 
+        # Find the start of the headers, starting from the end of the YAML
+        self.mmp.seek(self.yaml_end())
         dat = '\x00'
         while dat.strip() == '\x00':
             dat = self.mmp.read(1)
-
-        # The actual start of the headers
         self.mmp.seek(self.mmp.tell() - 1)
-        headers_offset = self.mmp.tell()
 
+        # Set up the type map based on the headers
         while True:
             pos = self.mmp.tell() + TELEM_NAME_OFFSET
-            line = self.mmp.read(TELEM_HEADER_LEN)
-            name = line[TELEM_NAME_OFFSET:TELEM_NAME_OFFSET + TELEM_NAME_MAX_LEN].replace('\x00','')
+            start = TELEM_NAME_OFFSET
+            end = TELEM_NAME_OFFSET + TELEM_NAME_MAX_LEN
+            header = self.mmp.read(TELEM_HEADER_LEN)
+            name = header[start:end].replace('\x00','')
             if name == '':
                 break
-            telem_map[name] = pos
-        return telem_map, headers_offset
+            var_types[name] = TYPEMAP[int(struct.unpack('i', header[0:4])[0])]
+
+        return var_types
 
 
 if __name__ == '__main__':
     
+    import time
     api = API()
     
-#    api.mmp.seek(0)
-#    print api.mmp.read(798720).replace('\x00', '')
-#    data, offset = session_data()
-#    print data
-#    print offset
-
-#    telemetry(offset)
+    while True:
+        print api.telemetry('Gear')
+        time.sleep(1)
 
     import pdb; pdb.set_trace()
     
