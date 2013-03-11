@@ -4,6 +4,7 @@ import yaml # Requires PyYAML
 
 
 MEMMAPFILE = 'Local\\IRSDKMemMapFileName'
+MEMMAPFILESIZE = 798720 # Hopefully this is fairly static...
 
 HEADER_LEN = 144
 
@@ -26,32 +27,38 @@ class API(object):
         self._mmp = None
         self._var_offsets = None
         self._names = None
+        self._telemetry_header_start = None
+        self._yaml_end = None
 
     @property
-    def _telemetry_header_start(self):
+    def telemetry_header_start(self):
         """ Returns the index of the telemetry header, searching from the end of
-            the yaml.
+            the yaml. Cached.
         """
-        self.mmp.seek(self._yaml_end)
-        dat = '\x00'
-        while dat.strip() == '\x00':
-            dat = self.mmp.read(1)
-        return self.mmp.tell() - 1
+        if self._telemetry_header_start is None:
+            self.mmp.seek(self.yaml_end)
+            dat = '\x00'
+            while dat.strip() == '\x00':
+                dat = self.mmp.read(1)
+            self._telemetry_header_start = self.mmp.tell() - 1
+        return self._telemetry_header_start
 
     @property
-    def _yaml_end(self):
-        """ Returns the index of the end of the YAML in memory.
+    def yaml_end(self):
+        """ Returns the index of the end of the YAML in memory, cached.
         """
-        self.mmp.seek(0)
-        offset = 0
-        headers = self.mmp.readline()
-        while True:
-            line = self.mmp.readline()
-            if line.strip() == '...':
-                break
-            else:
-                offset += len(line)
-        return offset + len(headers) + 4
+        if self._yaml_end is None:
+            self.mmp.seek(0)
+            offset = 0
+            headers = self.mmp.readline()
+            while True:
+                line = self.mmp.readline()
+                if line.strip() == '...':
+                    break
+                else:
+                    offset += len(line)
+            self._yaml_end = offset + len(headers) + 4
+        return self._yaml_end
 
     def _get(self, position, type):
         """ Gets a value from the mmp, based on a position and struct var type.
@@ -59,20 +66,17 @@ class API(object):
         size = struct.calcsize(type)
         self.mmp.seek(position)
         data = self.mmp.read(size)
-        return struct.unpack(type, data)[0]
+        val = struct.unpack(type, data)[0]
+        if val is None:
+            val = 0
+        return val
 
     @property
     def mmp(self):
         """ Create a memory map as big as allowed.
         """
         if self._mmp is None:
-            size = 500000
-            while True:
-                try:
-                    self._mmp = mmap.mmap(0, size, MEMMAPFILE)
-                    size += 1
-                except:
-                    break
+            self._mmp = mmap.mmap(0, MEMMAPFILESIZE, MEMMAPFILE)
         return self._mmp
 
     @property
@@ -102,7 +106,7 @@ class API(object):
         """
         if self._names is None:
             self._names = []
-            self.mmp.seek(self._telemetry_header_start)
+            self.mmp.seek(self.telemetry_header_start)
             while True:
                 pos = self.mmp.tell() + TELEM_NAME_OFFSET
                 start = TELEM_NAME_OFFSET
@@ -121,7 +125,7 @@ class API(object):
         if self._var_types is None:
             self._var_types = {}
             for i, name in enumerate(self.names):
-                type_loc = self._telemetry_header_start + (i * HEADER_LEN)
+                type_loc = self.telemetry_header_start + (i * HEADER_LEN)
                 self._var_types[name] = TYPEMAP[int(self._get(type_loc, 'i'))]
         return self._var_types
 
@@ -170,9 +174,11 @@ if __name__ == '__main__':
     """
     import time
     api = API()
-    
-    while True:
-        print '{0} Gear, {1} m/s, {2} m/s/s'.format(api.telemetry('Gear'),
-                                                    api.telemetry('Speed'),
-                                                    api.telemetry('LatAccel'))
-        time.sleep(1)
+    for name in api.names:
+        print '{0} = {1}'.format(name, api.telemetry(name))
+
+#    while True:
+#        print '{0} Gear, {1} m/s, {2} m/s/s'.format(api.telemetry('Gear'),
+#                                                    api.telemetry('Speed'),
+#                                                    api.telemetry('LatAccel'))
+#        time.sleep(1)
