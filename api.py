@@ -73,7 +73,7 @@ class API(object):
 
     @property
     def mmp(self):
-        """ Create a memory map as big as allowed.
+        """ Create the memory map.
         """
         if self._mmp is None:
             self._mmp = mmap.mmap(0, MEMMAPFILESIZE, MEMMAPFILE)
