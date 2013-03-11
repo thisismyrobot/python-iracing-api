@@ -168,11 +168,18 @@ class API(object):
                 ymltxt += line
         return yaml.load(ymltxt, Loader=yaml.CLoader)
 
+    def splat(self):
+        """ Helper method to dump all the fast and slow data as a dict.
+        """
+        yamldict = self.yaml
+        for name in self.names:
+            yamldict[name] = api.telemetry(name)
+        return yamldict
+
 
 if __name__ == '__main__':
     """ Simple test harness.
     """
     import time
     api = API()
-    for name in api.names:
-        print '{0}: {1}'.format(name, api.telemetry(name))
+    print api.splat()
