@@ -175,10 +175,4 @@ if __name__ == '__main__':
     import time
     api = API()
     for name in api.names:
-        print '{0} = {1}'.format(name, api.telemetry(name))
-
-#    while True:
-#        print '{0} Gear, {1} m/s, {2} m/s/s'.format(api.telemetry('Gear'),
-#                                                    api.telemetry('Speed'),
-#                                                    api.telemetry('LatAccel'))
-#        time.sleep(1)
+        print '{0}: {1}'.format(name, api.telemetry(name))
