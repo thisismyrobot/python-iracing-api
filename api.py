@@ -114,6 +114,8 @@ VALOFFSETS = {
 class API(object):
 
     def __init__(self):
+        self._var_types = self._buffer_offsets = self._sizes = None
+
         # Find max memory map size
         size = 500000
         while True:
@@ -122,14 +124,6 @@ class API(object):
                 size += 1
             except:
                 break
-
-        # Set up the telemetry, working out the var types
-        self.var_types, self.var_buffer_offsets = self._setup_telemetry()
-
-        # Find the size of each slot in memory - pre-calc for speed later
-        self.sizes = {}
-        for key, t in self.var_types.items():
-            self.sizes[key] = struct.calcsize(t)
 
     @property
     def _telemetry_header_start(self):
@@ -157,37 +151,55 @@ class API(object):
                 offset += len(line)
         return offset + len(headers) + 4
 
-    def _setup_telemetry(self):
-        # Find the offsets for the value array(s)
-        var_buffer_offsets = []
-        for i in range(VAL_BUFFERS):
-            seek = 52 + (i * 16)
-            self.mmp.seek(seek)
-            data = self.mmp.read(4)
-            offset = struct.unpack('i', data)[0]
-            var_buffer_offsets.append(offset)
+    @property
+    def sizes(self):
+        """ Find the size for each variable, cache the results.
+        """
+        if self._sizes is None:
+            self._sizes = {}
+            for key, var_type in self.var_types.items():
+                self._sizes[key] = struct.calcsize(var_type)
+        return self._sizes
 
-        # Set up the type map based on the headers
-        var_types = {}
-        self.mmp.seek(self._telemetry_header_start)
-        while True:
-            pos = self.mmp.tell() + TELEM_NAME_OFFSET
-            start = TELEM_NAME_OFFSET
-            end = TELEM_NAME_OFFSET + TELEM_NAME_MAX_LEN
-            header = self.mmp.read(TELEM_HEADER_LEN)
-            name = header[start:end].replace('\x00','')
-            if name == '':
-                break
-            var_type = TYPEMAP[int(struct.unpack('i', header[0:4])[0])]
-            var_types[name] = var_type
-        return var_types, var_buffer_offsets
+    @property
+    def buffer_offsets(self):
+        """ Find the offsets for the value array(s), cache the result.
+        """
+        if self._buffer_offsets is None:
+            self._buffer_offsets = []
+            for i in range(VAL_BUFFERS):
+                seek = 52 + (i * 16)
+                self.mmp.seek(seek)
+                data = self.mmp.read(4)
+                offset = struct.unpack('i', data)[0]
+                self._buffer_offsets.append(offset)
+        return self._buffer_offsets
+
+    @property
+    def var_types(self):
+        """ Set up the type map based on the headers, cache the results.
+        """
+        if self._var_types is None:
+            self._var_types = {}
+            self.mmp.seek(self._telemetry_header_start)
+            while True:
+                pos = self.mmp.tell() + TELEM_NAME_OFFSET
+                start = TELEM_NAME_OFFSET
+                end = TELEM_NAME_OFFSET + TELEM_NAME_MAX_LEN
+                header = self.mmp.read(TELEM_HEADER_LEN)
+                name = header[start:end].replace('\x00','')
+                if name == '':
+                    break
+                var_type = TYPEMAP[int(struct.unpack('i', header[0:4])[0])]
+                self._var_types[name] = var_type
+        return self._var_types
 
     def telemetry(self, key):
         """ Return the data for a telemetry key.
         """
-        offset = VALOFFSETS[key]
-        for vb_offset in self.var_buffer_offsets:
-            self.mmp.seek(vb_offset + offset)
+        value_offset = VALOFFSETS[key]
+        for buffer_offset in self.buffer_offsets:
+            self.mmp.seek(value_offset + buffer_offset)
             data = self.mmp.read(self.sizes[key])
             if len(data.replace('\x00','')) != 0:
                 return struct.unpack(self.var_types[key], data)[0]
