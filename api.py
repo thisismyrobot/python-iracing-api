@@ -141,7 +141,7 @@ class API(object):
     def telemetry(self, key):
         """ Return the data for a telemetry key.
         """
-        value_offset = VALOFFSETS[key]
+        value_offset = self.var_offsets[key]
         for buffer_offset in self.buffer_offsets:
             self.mmp.seek(value_offset + buffer_offset)
             data = self.mmp.read(self.sizes[key])
@@ -170,8 +170,7 @@ if __name__ == '__main__':
     """
     import time
     api = API()
-    api.var_offsets
-
+    
     while True:
         print '{0} Gear, {1} m/s, {2} m/s/s'.format(api.telemetry('Gear'),
                                                     api.telemetry('Speed'),
