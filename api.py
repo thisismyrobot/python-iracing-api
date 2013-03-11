@@ -114,16 +114,7 @@ VALOFFSETS = {
 class API(object):
 
     def __init__(self):
-        self._var_types = self._buffer_offsets = self._sizes = None
-
-        # Find max memory map size
-        size = 500000
-        while True:
-            try:
-                self.mmp = mmap.mmap(0, size, MEMMAPFILE)
-                size += 1
-            except:
-                break
+        self._var_types = self._buffer_offsets = self._sizes = self._mmp = None
 
     @property
     def _telemetry_header_start(self):
@@ -150,6 +141,20 @@ class API(object):
             else:
                 offset += len(line)
         return offset + len(headers) + 4
+
+    @property
+    def mmp(self):
+        """ Create a memory map as big as allowed.
+        """
+        if self._mmp is None:
+            size = 500000
+            while True:
+                try:
+                    self._mmp = mmap.mmap(0, size, MEMMAPFILE)
+                    size += 1
+                except:
+                    break
+        return self._mmp
 
     @property
     def sizes(self):
