@@ -8,3 +8,14 @@ Description
 
 Uses memory-mapped files, has slow-updating YAML data and fast (60Hz) updating
 telemetry data.
+
+Tests
+-----
+
+Run using:
+    python runtests.py
+
+Requires
+--------
+
+Python 2.7, PyYAML
