@@ -1,0 +1,27 @@
+iRacing API client
+==================
+
+Tests for the iRacing API client.
+
+Data file
+---------
+
+This series of tests will work with a cached copy of the memory file, so we need
+to get that.
+
+    >>> import os
+    >>> mmap_file = os.path.join('tests', 'memorydump.txt')
+    >>> mmap_f = open(mmap_file, 'r+b')
+
+And we need to convince the API client that it should actually be using this
+file instead of vainly looking in memory for iRacing's. We do this by creating a
+file with the correct tag for the API client to inspect.
+
+    >>> import api
+    >>> import mmap
+    >>> mocked_mmap = mmap.mmap(mmap_f.fileno(), api.MEMMAPFILESIZE,
+    ...                         'Local\\IRSDKMemMapFileName')
+
+    >>> yaml = api.API().yaml
+    >>> yaml['DriverInfo']['DriverHeadPosX']
+    -0.025000000000000001
