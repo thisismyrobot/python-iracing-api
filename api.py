@@ -70,9 +70,7 @@ class API(object):
         """ Gets a value from the mmp, based on a position and struct var type.
         """
         size = struct.calcsize(type)
-        self.mmp.seek(position)
-        data = self.mmp.read(size)
-        val = struct.unpack(type, data)[0]
+        val = struct.unpack(type, self.mmp[position:position + size])[0]
         if val is None:
             val = 0
         return val
