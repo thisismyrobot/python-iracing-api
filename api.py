@@ -8,7 +8,7 @@ MEMMAPFILESIZE = 798720 # Hopefully this is fairly static...
 
 HEADER_LEN = 144
 
-# How far into a header the name sits, and it's max length
+# How far into a header the name sits, and its max length
 TELEM_NAME_OFFSET = 16
 TELEM_NAME_MAX_LEN = 32
 
@@ -19,8 +19,14 @@ VAL_BUFFERS = 3
 TYPEMAP = ['c', '?', 'i', 'I', 'f', 'd']
 
 class API(object):
-
+    """ A basic read-only iRacing Session and Telemetry API client.
+    """
     def __init__(self):
+        """ Sets up a lot of internal variables, they are populated when first
+            accessed by their non underscore-prepended versions. This makes the
+            first access to a method like telemetry() slower, but massively
+            tidies up the codebase.
+        """
         self._var_types = None
         self._buffer_offsets = None
         self._sizes = None
