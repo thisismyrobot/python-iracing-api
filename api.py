@@ -148,12 +148,15 @@ class API(object):
         return self._var_offsets
 
     def telemetry(self, key):
-        """ Return the data for a telemetry key.
+        """ Return the data for a telemetry key. There are three buffers and
+            this returns the first one with a valid value.
+
+            TODO: Use the "tick" indicator to show which one to use instead of
+            this brute-force method.
         """
-        value_offset = self.var_offsets[key]
-        for buffer_offset in self.buffer_offsets:
-            self.mmp.seek(value_offset + buffer_offset)
-            data = self.mmp.read(self.sizes[key])
+        val_o = self.var_offsets[key]
+        for buf_o in self.buffer_offsets:
+            data = self.mmp[val_o + buf_o: val_o + buf_o + self.sizes[key]]
             if len(data.replace('\x00','')) != 0:
                 return struct.unpack(self.var_types[key], data)[0]
 
