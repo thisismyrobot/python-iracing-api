@@ -66,14 +66,6 @@ class API(object):
             self._yaml_end = offset + len(headers) + 4
         return self._yaml_end
 
-    def _get(self, position, type):
-        """ Gets a value from the mmp, based on a position and struct var type.
-        """
-        size = struct.calcsize(type)
-        val = struct.unpack(type, self.mmp[position:position + size])[0]
-        if val is None:
-            val = 0
-        return val
 
     @property
     def mmp(self):
@@ -146,6 +138,15 @@ class API(object):
                 offset = self._get(offsets_seek + (i * HEADER_LEN) + 4, 'i')
                 self._var_offsets[name] = offset
         return self._var_offsets
+
+    def _get(self, position, type):
+        """ Gets a value from the mmp, based on a position and struct var type.
+        """
+        size = struct.calcsize(type)
+        val = struct.unpack(type, self.mmp[position:position + size])[0]
+        if val is None:
+            val = 0
+        return val
 
     def telemetry(self, key):
         """ Return the data for a telemetry key. There are three buffers and
