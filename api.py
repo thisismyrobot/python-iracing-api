@@ -178,7 +178,7 @@ class API(object):
         """
         yamldict = self.yaml
         for name in self.names:
-            yamldict[name] = api.telemetry(name)
+            yamldict[name] = self.telemetry(name)
         return yamldict
 
 
