@@ -178,8 +178,7 @@ class API(object):
 
 
 if __name__ == '__main__':
-    """ Simple test harness.
+    """ Simple test usage.
     """
-    import time
     api = API()
     print api.splat()
