@@ -82,7 +82,8 @@ class API(object):
         """ Create the memory map.
         """
         if self._mmp is None:
-            self._mmp = mmap.mmap(0, MEMMAPFILESIZE, MEMMAPFILE)
+            self._mmp = mmap.mmap(0, MEMMAPFILESIZE, MEMMAPFILE,
+                                  access=mmap.ACCESS_READ)
         return self._mmp
 
     @property
