@@ -23,14 +23,22 @@ file with the correct tag for the API client to inspect.
     ...                         'Local\\IRSDKMemMapFileName')
     >>> api_client = api.API()
 
-YAML
-----
+YAML (session)
+--------------
 
-There is YAML generated for the session, and it updates slowly.
+There is YAML generated for the session, and it updates slowly. The YAML has
+been flattened with underscores between keys.
     
-    >>> yaml = api_client.yaml
-    >>> yaml['DriverInfo']['DriverHeadPosX']
+    >>> api_client.session('DriverInfo_DriverHeadPosX')
     -0.025000000000000001
+
+You can also see all the keys for the session.
+
+    >>> len(api_client.session_keys)
+    62
+
+    >>> api_client.session_keys[0]
+    'CameraInfo_Groups'
 
 Telemetry
 ---------
@@ -40,3 +48,18 @@ way - though we do it by key for speed of access.
 
     >>> api_client.telemetry('Speed')
     1.7011767625808716
+
+Like with the session, you can also see all the keys for the telemetry.
+
+    >>> len(api_client.telemetry_keys)
+    95
+
+    >>> api_client.telemetry_keys[0]
+    'Brake'
+
+Splat
+-----
+
+There's a helper method that we can call to dump everything as a dict.
+
+    >>> _ = api_client.splat
