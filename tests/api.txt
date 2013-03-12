@@ -21,7 +21,22 @@ file with the correct tag for the API client to inspect.
     >>> import mmap
     >>> mocked_mmap = mmap.mmap(mmap_f.fileno(), api.MEMMAPFILESIZE,
     ...                         'Local\\IRSDKMemMapFileName')
+    >>> api_client = api.API()
 
-    >>> yaml = api.API().yaml
+YAML
+----
+
+There is YAML generated for the session, and it updates slowly.
+    
+    >>> yaml = api_client.yaml
     >>> yaml['DriverInfo']['DriverHeadPosX']
     -0.025000000000000001
+
+Telemetry
+---------
+
+There is telemetry updated 60 times a second, we can access that in a similar
+way - though we do it by key for speed of access.
+
+    >>> api_client.telemetry('Speed')
+    1.7011767625808716
