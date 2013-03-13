@@ -1,0 +1,9 @@
+Version info
+------------
+
+Numbers match tags in https://github.com/thisismyrobot/python-iracing-api
+
+Versions
+--------
+
+1.0 Initial Version with basic session and telemetry accessors.
