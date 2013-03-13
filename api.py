@@ -38,6 +38,14 @@ class API(object):
         self.__telemetry_header_start = None
         self.__yaml_end = None
 
+    def __getitem__(self, key):
+        """ Helper to allow for API()['Speed'] to work.
+        """
+        try:
+            return self.telemetry(key)
+        except:
+            return self.session(key)
+
     @property
     def _telemetry_header_start(self):
         """ Returns the index of the telemetry header, searching from the end of
@@ -192,6 +200,11 @@ class API(object):
         """
         return sorted(self._telemetry_names)
 
+    def keys(self):
+        """ Helper to allow this to be semi-iterable by allowing .keys() calls.
+        """
+        return sorted(self.session_keys + self.telemetry_keys)
+
     def telemetry(self, key):
         """ Return the data for a telemetry key. There are three buffers and
             this returns the first one with a valid value.
@@ -214,10 +227,8 @@ class API(object):
         """ Helper method to dump all the fast and slow data as a dict.
         """
         outdict = {}
-        for key in self.session_keys:
-            outdict[key] = self.session(key)
-        for key in self.telemetry_keys:
-            outdict[key] = self.telemetry(key)
+        for key in self.keys():
+            outdict[key] = self[key]
         return outdict
 
 

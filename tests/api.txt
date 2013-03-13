@@ -28,7 +28,7 @@ YAML (session)
 
 There is YAML generated for the session, and it updates slowly. The YAML has
 been flattened with underscores between keys.
-    
+
     >>> api_client.session('DriverInfo_DriverHeadPosX')
     -0.025000000000000001
 
@@ -62,4 +62,25 @@ Splat
 
 There's a helper method that we can call to dump everything as a dict.
 
-    >>> _ = api_client.splat
+    >>> all = api_client.splat()
+    >>> all['Speed']
+    1.7011767625808716
+
+    >>> all['DriverInfo_DriverHeadPosX']
+    -0.025000000000000001
+
+Helpers
+-------
+
+There are some convenience helpers too - you can access the client like a dict:
+
+    >>> api_client['Speed']
+    1.7011767625808716
+
+    >>> api_client['DriverInfo_DriverHeadPosX']
+    -0.025000000000000001
+
+And dump all the keys like a dict:
+
+    >>> len(api_client.keys())
+    157
