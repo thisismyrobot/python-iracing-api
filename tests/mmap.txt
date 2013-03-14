@@ -1,0 +1,14 @@
+Memory file tests
+-----------------
+
+Specifically, if it's not there.
+
+If iRacing is not running, the memory mapped file will not exist. We handle this
+by raising an exception - this happens when there is no file, or the file is
+there, but empty.
+
+    >>> import api
+    >>> api_client = api.API()
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in ?
+    Exception: iRacing memory mapped file could not be found

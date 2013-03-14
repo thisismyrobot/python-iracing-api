@@ -6,6 +6,7 @@ import yaml # Requires PyYAML
 
 MEMMAPFILE = 'Local\\IRSDKMemMapFileName'
 MEMMAPFILESIZE = 798720 # Hopefully this is fairly static...
+MEMMAPFILE_START = '\x01' # Used to detect file exists
 
 HEADER_LEN = 144
 
@@ -18,6 +19,7 @@ VAL_BUFFERS = 3
 
 # The mapping between the type integer in memory mapped file and Python's struct
 TYPEMAP = ['c', '?', 'i', 'I', 'f', 'd']
+
 
 class API(object):
     """ A basic read-only iRacing Session and Telemetry API client.
@@ -37,6 +39,8 @@ class API(object):
         self.__yaml_names = None
         self.__telemetry_header_start = None
         self.__yaml_end = None
+        if not self._iracing_alive():
+           raise Exception("iRacing memory mapped file could not be found")
 
     def __getitem__(self, key):
         """ Helper to allow for API()['Speed'] to work.
@@ -45,6 +49,16 @@ class API(object):
             return self.telemetry(key)
         except:
             return self.session(key)
+
+    def _iracing_alive(self):
+        """ Returns true if iRacing is running, determined by whether we have a
+            memory mapped file or not.
+        """
+        try:
+            self._mmp.seek(0)
+            return self._mmp.read(1) == MEMMAPFILE_START
+        except:
+            return False
 
     @property
     def _telemetry_header_start(self):
