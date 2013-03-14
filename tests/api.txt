@@ -10,7 +10,7 @@ This series of tests will work with a cached copy of the memory file, so we need
 to get that.
 
     >>> import os
-    >>> mmap_file = os.path.join('tests', 'memorydump.txt')
+    >>> mmap_file = os.path.join('tests', 'memorydump.dmp')
     >>> mmap_f = open(mmap_file, 'r+b')
 
 And we need to convince the API client that it should actually be using this
