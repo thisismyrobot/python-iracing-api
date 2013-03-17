@@ -12,19 +12,17 @@ telemetry data.
 API
 ---
 
-This file api.py provides read-only access to the iRacing memory mapped file 
+This file api.py provides read-only access to the iRacing memory mapped file
 session and telemetry API.
 
-To get all meta, the api.py has an API of it's own. Currently it's locked in at
-a minimum of two method calls:
+To get all meta, the api.py has an API of it's own. It's a very simple dict
+interface:
 
-    api.API().telemetry([KEY])
-    api.API().session([KEY])
+    api.API()[KEY]
 
-As well as two properties:
+And there's a dict-like .keys() helper:
 
-    api.API().telemetry_keys
-    api.API().session_keys
+    api.API().keys()
 
 I'll do my best to support this as a minimum, going forward, but I'm hoping to
 add more clevers as well of course.
@@ -34,6 +32,12 @@ Tests
 
 Run using:
     python runtests.py
+
+Benchmarking
+------------
+
+To check telemetry read performance on your machine, run:
+    python benchmark.py
 
 Requires
 --------
