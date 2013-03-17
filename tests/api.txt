@@ -27,60 +27,38 @@ YAML (session)
 --------------
 
 There is YAML generated for the session, and it updates slowly. The YAML has
-been flattened with underscores between keys.
+is accessable through nested keys.
 
-    >>> api_client.session('DriverInfo_DriverHeadPosX')
+    >>> api_client['DriverInfo']['DriverHeadPosX']
     -0.025000000000000001
 
-You can also see all the keys for the session.
+    >>> api_client['SessionInfo']['Sessions'][0]['ResultsFastestLap'][0]['FastestTime']
+    0.0
 
-    >>> len(api_client.session_keys)
-    62
-
-    >>> api_client.session_keys[0]
-    'CameraInfo_Groups'
+    >>> api_client['SessionInfo']['Sessions'][0]['ResultsFastestLap'][0]['CarIdx']
+    255
 
 Telemetry
 ---------
 
-There is telemetry updated 60 times a second, we can access that in a similar
-way - though we do it by key for speed of access.
-
-    >>> api_client.telemetry('Speed')
-    1.7011767625808716
-
-Like with the session, you can also see all the keys for the telemetry.
-
-    >>> len(api_client.telemetry_keys)
-    95
-
-    >>> api_client.telemetry_keys[0]
-    'Brake'
-
-Splat
------
-
-There's a helper method that we can call to dump everything as a dict.
-
-    >>> all = api_client.splat()
-    >>> all['Speed']
-    1.7011767625808716
-
-    >>> all['DriverInfo_DriverHeadPosX']
-    -0.025000000000000001
-
-Helpers
--------
-
-There are some convenience helpers too - you can access the client like a dict:
+There is telemetry updated 60 times a second, we can access that in the same
+way.
 
     >>> api_client['Speed']
     1.7011767625808716
 
-    >>> api_client['DriverInfo_DriverHeadPosX']
-    -0.025000000000000001
+Helpers
+-------
 
-And dump all the keys like a dict:
+There are some convenience helpers too - you can access the client like a dict
+so the keys are available too:
 
-    >>> len(api_client.keys())
-    157
+    >>> keys = api_client.keys()
+    >>> len(keys)
+    101
+
+    >>> 'SessionInfo' in keys
+    True
+    
+    >>> 'Speed' in keys
+    True

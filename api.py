@@ -1,5 +1,6 @@
 import collections
 import mmap
+import os
 import struct
 import yaml # Requires PyYAML
 
@@ -37,18 +38,17 @@ class API(object):
         self.__var_offsets = None
         self.__telemetry_names = None
         self.__yaml_names = None
-        self.__telemetry_header_start = None
-        self.__yaml_end = None
+
         if not self._iracing_alive():
            raise Exception("iRacing memory mapped file could not be found")
 
     def __getitem__(self, key):
         """ Helper to allow for API()['Speed'] to work.
         """
-        try:
+        if key in self._telemetry_names:
             return self.telemetry(key)
-        except:
-            return self.session(key)
+        else:
+            return self._yaml_dict[key]
 
     def _iracing_alive(self):
         """ Returns true if iRacing is running, determined by whether we have a
@@ -63,32 +63,28 @@ class API(object):
     @property
     def _telemetry_header_start(self):
         """ Returns the index of the telemetry header, searching from the end of
-            the yaml. Cached.
+            the yaml.
         """
-        if self.__telemetry_header_start is None:
-            self._mmp.seek(self._yaml_end)
-            dat = '\x00'
-            while dat.strip() == '\x00':
-                dat = self._mmp.read(1)
-            self.__telemetry_header_start = self._mmp.tell() - 1
-        return self.__telemetry_header_start
+        self._mmp.seek(self._yaml_end)
+        dat = '\x00'
+        while dat.strip() == '\x00':
+            dat = self._mmp.read(1)
+        return self._mmp.tell() - 1
 
     @property
     def _yaml_end(self):
-        """ Returns the index of the end of the YAML in memory, cached.
+        """ Returns the index of the end of the YAML in memory.
         """
-        if self.__yaml_end is None:
-            self._mmp.seek(0)
-            offset = 0
-            headers = self._mmp.readline()
-            while True:
-                line = self._mmp.readline()
-                if line.strip() == '...':
-                    break
-                else:
-                    offset += len(line)
-            self.__yaml_end = offset + len(headers) + 4
-        return self.__yaml_end
+        self._mmp.seek(0)
+        offset = 0
+        headers = self._mmp.readline()
+        while True:
+            line = self._mmp.readline()
+            if line.strip() == '...':
+                break
+            else:
+                offset += len(line)
+        return offset + len(headers) + 4
 
     @property
     def _mmp(self):
@@ -162,32 +158,15 @@ class API(object):
                 self.__var_offsets[name] = offset
         return self.__var_offsets
 
-    @staticmethod
-    def _flatten(yaml_dict, parent_key=None):
-        items = []
-        for key, value in yaml_dict.items():
-            new_key = parent_key + '_' + key if parent_key else key
-            if isinstance(value, collections.MutableMapping):
-                items.extend(API._flatten(value, new_key).items())
-            else:
-                items.append((new_key, value))
-        return dict(items)
-
     @property
     def _yaml_dict(self):
-        """ Returns the session yaml as a dict.
+        """ Returns the session yaml as a nested dict.
         """
         ymltxt = ''
         self._mmp.seek(0)
         headers = self._mmp.readline()
-        while True:
-            line = self._mmp.readline()
-            if line.strip() == '...':
-                break
-            else:
-                ymltxt += line
-        yml_dict = yaml.load(ymltxt, Loader=yaml.CLoader)
-        return API._flatten(yml_dict)
+        return yaml.load(self._mmp[self._mmp.tell():self._yaml_end],
+                         Loader=yaml.CLoader)
 
     def _get(self, position, type):
         """ Gets a value from the mmp, based on a position and struct var type.
@@ -198,26 +177,10 @@ class API(object):
             val = 0
         return val
 
-    @property
-    def session_keys(self):
-        """ Returns the yaml keys, sorted and cached.
-        """
-        if self.__yaml_names is None:
-            self.__yaml_names = sorted([key
-                                        for key, value
-                                        in self._yaml_dict.items()])
-        return self.__yaml_names
-
-    @property
-    def telemetry_keys(self):
-        """ Returns a sorted list of telemetry keys.
-        """
-        return sorted(self._telemetry_names)
-
     def keys(self):
-        """ Helper to allow this to be semi-iterable by allowing .keys() calls.
+        """ Helper to allow this to be semi-dict-like by allowing .keys() calls.
         """
-        return sorted(self.session_keys + self.telemetry_keys)
+        return sorted(self._yaml_dict.keys() + self._telemetry_names)
 
     def telemetry(self, key):
         """ Return the data for a telemetry key. There are three buffers and
@@ -232,22 +195,9 @@ class API(object):
             if len(data.replace('\x00','')) != 0:
                 return struct.unpack(self._var_types[key], data)[0]
 
-    def session(self, key):
-        """ Returns the value for a YAML key.
-        """
-        return self._yaml_dict[key]
-
-    def splat(self):
-        """ Helper method to dump all the fast and slow data as a dict.
-        """
-        outdict = {}
-        for key in self.keys():
-            outdict[key] = self[key]
-        return outdict
-
-
 if __name__ == '__main__':
     """ Simple test usage.
     """
-    api = API()
-    print api.splat()
+    client = API()
+    for key in client.keys():
+        print api[key]
