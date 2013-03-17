@@ -200,4 +200,4 @@ if __name__ == '__main__':
     """
     client = API()
     for key in client.keys():
-        print api[key]
+        print key, client[key]
