@@ -7,7 +7,7 @@ import yaml # Requires PyYAML
 
 MEMMAPFILE = 'Local\\IRSDKMemMapFileName'
 MEMMAPFILESIZE = 798720 # Hopefully this is fairly static...
-MEMMAPFILE_START = '\x01' # Used to detect file exists
+MEMMAPFILE_START = '\x01' # Used to detect memory mapped file exists
 
 HEADER_LEN = 144
 

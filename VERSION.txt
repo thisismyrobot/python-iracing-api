@@ -6,6 +6,8 @@ Numbers match tags in https://github.com/thisismyrobot/python-iracing-api
 Versions
 --------
 
+1.2     Added setuptools install script
+
 1.11    Bug fix to demo usage.
 
 1.1     Moved to dict-based telemetry access due to problems with nested YAML
