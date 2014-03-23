@@ -25,7 +25,7 @@ TYPEMAP = ['c', '?', 'i', 'I', 'f', 'd']
 class API(object):
     """ A basic read-only iRacing Session and Telemetry API client.
     """
-    def __init__(self):
+    def __init__(self, mmap_object = None):
         """ Sets up a lot of internal variables, they are populated when first
             accessed by their non underscore-prepended versions. This makes the
             first access to a method like telemetry() slower, but massively
@@ -34,7 +34,7 @@ class API(object):
         self.__var_types = None
         self.__buffer_offsets = None
         self.__sizes = None
-        self.__mmp = None
+        self.__mmp = mmap_object
         self.__var_offsets = None
         self.__telemetry_names = None
         self.__yaml_names = None
@@ -91,7 +91,7 @@ class API(object):
         """ Create the memory map.
         """
         if self.__mmp is None:
-            self.__mmp = mmap.mmap(0, MEMMAPFILESIZE, MEMMAPFILE,
+            self.__mmp = mmap.mmap(-1, MEMMAPFILESIZE, MEMMAPFILE,
                                   access=mmap.ACCESS_READ)
         return self.__mmp
 
